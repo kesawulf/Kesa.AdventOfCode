@@ -3,10 +3,22 @@ using System.Text;
 
 namespace Kesa.AdventOfCode.Aoc2023
 {
+    internal record struct Vector2(int X, int Y)
+    {
+        public static implicit operator Vector2((int X, int Y) tuple) => new Vector2(tuple.X, tuple.Y);
+
+        public static Vector2 operator +(Vector2 l, Vector2 r) => new Vector2(l.X + r.X, l.Y + r.Y);
+
+        public override string ToString()
+        {
+            return (X, Y).ToString();
+        }
+    }
+
     internal static class Day03Shared
     {
-        public static (int X, int Y)[] Offsets { get; } = new[]
-        {
+        public static Vector2[] Offsets { get; } =
+        [
             (-1, -1),
             (-1, 0),
             (-1, 1),
@@ -18,7 +30,7 @@ namespace Kesa.AdventOfCode.Aoc2023
             (1, -1),
             (1, 0),
             (1, 1),
-        };
+        ];
     }
 
     internal class Day03_Part1 : IAocRunner
@@ -121,82 +133,47 @@ namespace Kesa.AdventOfCode.Aoc2023
         }
     }
 
-    internal class Day03NumberInfo
-    {
-        public int StartX { get; set; }
-
-        public int StartY { get; set; }
-
-        public int Value { get; set; }
-
-        public bool IsPartNumber { get; set; }
-    }
-
     internal class Day03_Part2 : IAocRunner
     {
         public static string Run(string input)
         {
             var lines = input.Lines().ToArray()!;
-            var number = new StringBuilder();
-            var numberInfo = new Day03NumberInfo();
             var answer = 0;
 
-            var numberMap = new Dictionary<(int X, int Y), Day03NumberInfo>();
-
             for (int row = 0; row < lines.Length; row++)
             {
                 var line = lines[row];
-
-                Reset();
+                var knownStarts = new HashSet<Vector2>();
 
                 for (int column = 0; column < line.Length + 1; column++)
                 {
-                    if (column == line.Length)
+                    var position = new Vector2(column, row);
+
+                    if (!TryGetCharacter(position, out var potentialGear) || potentialGear is not '*')
                     {
-                        Check();
                         continue;
                     }
 
-                    var character = line[column];
+                    var count = 0;
+                    var ratio = 1;
 
-                    if (char.IsDigit(character))
+                    foreach (var offset in Day03Shared.Offsets)
                     {
-                        number.Append(character);
-                        numberInfo ??= new Day03NumberInfo() { StartX = column, StartY = row };
-                        numberMap[(column, row)] = numberInfo;
-
-                        if (HasSymbolAround(row, column))
+                        var potentialPosition = position + offset;
+                        if (TryGetCharacter(potentialPosition, out var potentialDigit) && char.IsDigit(potentialDigit))
                         {
-                            numberInfo.IsPartNumber = true;
+                            var start = GetNumberStart(potentialPosition);
+
+                            if (TryReadPartNumber(start, out var value) && knownStarts.Add(start))
+                            {
+                                count++;
+                                ratio *= value;
+                            }
                         }
                     }
-                    else
+
+                    if (count == 2)
                     {
-                        Check();
-                    }
-                }
-            }
-
-            for (int row = 0; row < lines.Length; row++)
-            {
-                var line = lines[row];
-
-                for (int column = 0; column < line.Length + 1; column++)
-                {
-                    if (!TryGetCharacter(row, column, out var potentialGear) || potentialGear is not '*')
-                    {
-                        continue;
-                    }
-
-                    var surroundingNumbers = Day03Shared.Offsets
-                        .Select(offset => numberMap.TryGetValue((column + offset.X, row + offset.Y), out var numberInfo) ? numberInfo : null)
-                        .Where(info => info is { IsPartNumber: true })
-                        .Distinct()
-                        .ToArray();
-
-                    if (surroundingNumbers.Length == 2)
-                    {
-                        var ratio = surroundingNumbers.Select(n => n.Value).Aggregate((a, b) => a * b);
                         answer += ratio;
                     }
                 }
@@ -204,42 +181,82 @@ namespace Kesa.AdventOfCode.Aoc2023
 
             return answer.ToString();
 
-            void Check()
+            Vector2 GetNumberStart(Vector2 position)
             {
-                if (number.Length > 0)
+                for (int x = position.X; x >= 0; x--)
                 {
-                    numberInfo.Value = int.Parse(number.ToString());
-                    Reset();
+                    var potentialPosition = position with { X = x };
+
+                    if (TryGetCharacter(potentialPosition, out var potentialDigit) && char.IsDigit(potentialDigit))
+                    {
+                        position = potentialPosition;
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
+
+                return position;
             }
 
-            void Reset()
+            bool TryReadPartNumber(Vector2 startPosition, out int value)
             {
-                number.Clear();
-                numberInfo = null;
+                var isPartNumber = false;
+                var number = 0;
+
+                if (IsPositionSymbol(startPosition + (-1, 0)))
+                {
+                    isPartNumber = true;
+                }
+
+                var position = startPosition + (-1, 0);
+
+                for (; ; position.X++)
+                {
+                    if (!TryGetCharacter(position, out var currentCharacter))
+                    {
+                        if (position.X > lines[startPosition.Y].Length)
+                        {
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    if (IsPositionSymbol(position + (0, -1)) || IsPositionSymbol(position + (0, 1)))
+                    {
+                        isPartNumber = true;
+                    }
+
+                    if (char.IsDigit(currentCharacter))
+                    {
+                        number *= 10;
+                        number += (currentCharacter - '0');
+                    }
+                    else if (position.X >= startPosition.X)
+                    {
+                        break;
+                    }
+                }
+
+                if (IsPositionSymbol(position))
+                {
+                    isPartNumber = true;
+                }
+
+                value = number;
+                return isPartNumber;
             }
 
-            bool HasSymbolAround(int row, int column)
-            {
-                return false
-                    || IsPositionSymbol(row - 1, column - 1)
-                    || IsPositionSymbol(row - 1, column)
-                    || IsPositionSymbol(row - 1, column + 1)
-
-                    || IsPositionSymbol(row, column - 1)
-                    || IsPositionSymbol(row, column + 1)
-
-                    || IsPositionSymbol(row + 1, column - 1)
-                    || IsPositionSymbol(row + 1, column)
-                    || IsPositionSymbol(row + 1, column + 1);
-            }
-
-            bool IsPositionSymbol(int row, int column) => TryGetCharacter(row, column, out var character) && IsSymbol(character);
+            bool IsPositionSymbol(Vector2 position) => TryGetCharacter(position, out var character) && IsSymbol(character);
 
             bool IsSymbol(char character) => !char.IsDigit(character) && character is not '.';
 
-            bool TryGetCharacter(int row, int column, out char character)
+            bool TryGetCharacter(Vector2 position, out char character)
             {
+                var (column, row) = (position.X, position.Y);
+
                 if (row >= 0 && row < lines!.Length)
                 {
                     var line = lines[row];
