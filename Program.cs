@@ -18,30 +18,62 @@ namespace Kesa.AdventOfCode
                     && int.TryParse(dayText, out var day)
                     && runners.FirstOrDefault(runner => runner.Year == year && runner.Day == day) is { } chosenRunner)
                 {
-                    Execute(chosenRunner);
-                    return;
+                    var partNumber = args is { Length: 3 } ? args[^1] : null;
+                    var chosenPart = partNumber == null
+                        ? chosenRunner.Parts.FirstOrDefault(variant => variant.Number.ToString() == partNumber)
+                        : chosenRunner.Parts.OrderBy(p => p.Number).Last();
+
+                    if (chosenPart != null)
+                    {
+                        Execute(chosenRunner, chosenPart);
+                        return;
+                    }
                 }
 
-                Console.WriteLine("Invalid year and day arguments.");
+                Console.WriteLine("Invalid year and day arguments or invalid variant name.");
                 PrintAvailable();
                 return;
             }
 
+            var choiceRegex = new Regex(@"(?<year>\d+)-(?<day>\d+)(?:.(?<part>\d+))?");
+
             while (true)
             {
                 PrintAvailable();
-                Console.WriteLine("Enter an AoC or leave blank for latest:");
+                Console.WriteLine("Enter an AoC (Year-Day.Part) or leave blank for latest:");
                 var chosenRunnerDescription = Console.ReadLine();
 
                 if (string.IsNullOrWhiteSpace(chosenRunnerDescription))
                 {
-                    chosenRunnerDescription = runners.Last().Description;
+                    var runner = runners.Last();
+                    chosenRunnerDescription = runner.Description + "." + runner.Parts.OrderBy(p => p.Number).Last().Number;
                 }
 
-                if (runners.FirstOrDefault(runner => runner.Description == chosenRunnerDescription) is { } chosenRunner)
+                if (true
+                    && choiceRegex.Match(chosenRunnerDescription) is { Success: true } match
+                    && match.TryGetGroup<int>("year", out var year)
+                    && match.TryGetGroup<int>("day", out var day))
                 {
-                    Execute(chosenRunner);
-                    return;
+                    if (runners.FirstOrDefault(runner => runner.Year == year && runner.Day == day) is not { } chosenRunner)
+                    {
+                        continue;
+                    }
+
+                    var chosenPart = chosenRunner.Parts.OrderBy(p => p.Number).FirstOrDefault();
+
+                    var isSpecificPart = match.TryGetGroup<int>("part", out var part);
+                    if (isSpecificPart)
+                    {
+                        chosenPart = chosenRunner.Parts.FirstOrDefault(p => p.Number == part);
+                    }
+
+                    if (chosenPart == null)
+                    {
+                        continue;
+                    }
+
+                    Execute(chosenRunner, chosenPart);
+                    Console.ReadLine();
                 }
             }
 
@@ -52,7 +84,7 @@ namespace Kesa.AdventOfCode
 
                 foreach (var runner in runners)
                 {
-                    Console.WriteLine($"    - {runner.Description}");
+                    Console.WriteLine($"    - {runner.VariantDescription}");
                 }
 
                 Console.WriteLine("");
@@ -69,22 +101,37 @@ namespace Kesa.AdventOfCode
 
         public static IEnumerable<AocRunnerInfo> GetRunnerInfos()
         {
-            var regex = new Regex(@"Aoc(?<year>\d+).Day(?<day>\d+)");
+            var regex = new Regex(@"Aoc(?<year>\d+).Day(?<day>\d+)(?:_Part(?<part>\w+))?");
 
             return GetApplicableTypes()
                 .Select(type => (Type: type, Match: regex.Match($"{type.Namespace}.{type.Name}")))
                 .Where(pair => pair.Match.Success)
-                .Select(pair => new AocRunnerInfo(pair.Type, int.Parse(pair.Match.Groups["year"].Value), int.Parse(pair.Match.Groups["day"].Value)))
+                .Select(pair => (
+                    pair.Type,
+                    Year: pair.Match.GetGroup<int>("year"),
+                    Day: pair.Match.GetGroup<int>("day"),
+                    Part: pair.Match.TryGetGroup<int>("part", out var part) ? part : 1
+                ))
+                .GroupBy(tuple => (tuple.Year, tuple.Day))
+                .Select(group => new AocRunnerInfo(group.Key.Year, group.Key.Day, group.Select(tuple => new AocRunnerPartInfo(tuple.Type, tuple.Part)).ToArray()))
                 .OrderBy(runner => runner.Year)
                 .ThenBy(runner => runner.Day);
         }
 
-        public static void Execute(AocRunnerInfo runnerInfo)
+        public static void Execute(AocRunnerInfo runner, AocRunnerPartInfo part)
         {
-            var method = runnerInfo.Type.GetMethod(nameof(IAocRunner.Run))!;
+            var method = part.Type.GetMethod(nameof(IAocRunner.Run))!;
             var input = GetTextFromResource();
 
-            Console.WriteLine($"Executing AoC {runnerInfo.Description}");
+            if (runner.Parts is not { Length: > 1 })
+            {
+                Console.WriteLine($"Executing AoC {runner.Description}");
+            }
+            else
+            {
+                Console.WriteLine($"Executing AoC {runner.Description} ({part.Number})");
+            }
+
             Console.WriteLine("");
 
             var stopwatch = Stopwatch.StartNew();
@@ -102,7 +149,7 @@ namespace Kesa.AdventOfCode
 
                 var resourceName = assembly
                     .GetManifestResourceNames()
-                    .FirstOrDefault(x => x.EndsWith("." + runnerInfo.InputPath, StringComparison.CurrentCultureIgnoreCase))!;
+                    .FirstOrDefault(x => x.EndsWith("." + runner.InputPath, StringComparison.CurrentCultureIgnoreCase))!;
 
                 using var stream = assembly.GetManifestResourceStream(resourceName)!;
                 using var reader = new StreamReader(stream);
@@ -111,10 +158,16 @@ namespace Kesa.AdventOfCode
         }
     }
 
-    public record AocRunnerInfo(Type Type, int Year, int Day)
+    public record AocRunnerInfo(int Year, int Day, AocRunnerPartInfo[] Parts)
     {
         public string Description { get; } = $"{Year}-{Day:D2}";
 
+        public string VariantDescription => Parts is { Length: > 1 }
+            ? $"{Description} ({string.Join("|", Parts.Select(v => v.Number))})"
+            : Description;
+
         public string InputPath { get; } = $"Aoc{Year}.Input.Day{Day:D2}.txt";
     }
+
+    public record AocRunnerPartInfo(Type Type, int Number);
 }

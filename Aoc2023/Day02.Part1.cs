@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Kesa.AdventOfCode.Aoc2023
 {
-    internal class Day02 : IAocRunner
+    internal class Day02_Part1 : IAocRunner
     {
         public static string Run(string input)
         {
@@ -18,7 +18,6 @@ namespace Kesa.AdventOfCode.Aoc2023
                     && itemRegex.Matches(item) is { Count: > 0 } itemMatches)
                 {
                     var gameId = gameMatch.GetGroup<int>("id");
-                    var gameInfo = new Day02GameInfo(gameId);
                     var valid = true;
 
                     foreach (Match match in itemMatches)
@@ -45,6 +44,4 @@ namespace Kesa.AdventOfCode.Aoc2023
             return answer.ToString();
         }
     }
-
-    public record Day02GameInfo(int Id);
 }
