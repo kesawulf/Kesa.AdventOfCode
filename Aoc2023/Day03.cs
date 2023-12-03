@@ -14,8 +14,18 @@ namespace Kesa.AdventOfCode.Aoc2023
         }
     }
 
-    internal record Day03TextGrid(string[] Lines)
+    internal record Day03TextGrid(string input)
     {
+        public int Width { get; } = input.IndexOf('\n');
+
+        public int Height => Width;
+
+        public ReadOnlySpan<char> GetLine(int rowIndex)
+        {
+            var start = (Width + 1) * rowIndex;
+            return input.AsSpan(start, Width);
+        }
+
         public Vector2 GetNumberStart(Vector2 position)
         {
             for (int x = position.X; x >= 0; x--)
@@ -51,7 +61,7 @@ namespace Kesa.AdventOfCode.Aoc2023
             {
                 if (!TryGetCharacter(position, out var currentCharacter))
                 {
-                    if (position.X > Lines[startPosition.Y].Length)
+                    if (position.X > Width)
                     {
                         break;
                     }
@@ -92,9 +102,9 @@ namespace Kesa.AdventOfCode.Aoc2023
         {
             var (column, row) = (position.X, position.Y);
 
-            if (row >= 0 && row < Lines!.Length)
+            if (row >= 0 && row < Height)
             {
-                var line = Lines[row];
+                var line = GetLine(row);
 
                 if (column >= 0 && column < line.Length)
                 {
@@ -130,13 +140,13 @@ namespace Kesa.AdventOfCode.Aoc2023
     {
         public static string Run(string input)
         {
-            var grid = new Day03TextGrid(input.Lines().ToArray());
+            var grid = new Day03TextGrid(input);
             var knownStarts = new HashSet<Vector2>();
             var answer = 0;
 
-            for (int row = 0; row < grid.Lines.Length; row++)
+            for (int row = 0; row < grid.Height; row++)
             {
-                for (int column = 0; column < grid.Lines[row].Length + 1; column++)
+                for (int column = 0; column < grid.Width + 1; column++)
                 {
                     var position = new Vector2(column, row);
 
@@ -160,13 +170,13 @@ namespace Kesa.AdventOfCode.Aoc2023
     {
         public static string Run(string input)
         {
-            var grid = new Day03TextGrid(input.Lines().ToArray()!);
+            var grid = new Day03TextGrid(input);
             var knownStarts = new HashSet<Vector2>();
             var answer = 0;
 
-            for (int row = 0; row < grid.Lines.Length; row++)
+            for (int row = 0; row < grid.Height; row++)
             {
-                var line = grid.Lines[row];
+                var line = grid.GetLine(row);
 
                 for (int column = 0; column < line.Length + 1; column++)
                 {
