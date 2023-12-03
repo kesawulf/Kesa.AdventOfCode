@@ -1,5 +1,4 @@
 ﻿using Kesa.AdventOfCode.Common;
-using System.Text;
 
 namespace Kesa.AdventOfCode.Aoc2023
 {
@@ -12,6 +11,100 @@ namespace Kesa.AdventOfCode.Aoc2023
         public override string ToString()
         {
             return (X, Y).ToString();
+        }
+    }
+
+    internal record Day03TextGrid(string[] Lines)
+    {
+        public Vector2 GetNumberStart(Vector2 position)
+        {
+            for (int x = position.X; x >= 0; x--)
+            {
+                var potentialPosition = position with { X = x };
+
+                if (TryGetCharacter(potentialPosition, out var potentialDigit) && char.IsDigit(potentialDigit))
+                {
+                    position = potentialPosition;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return position;
+        }
+
+        public bool TryReadPartNumber(Vector2 startPosition, out int value)
+        {
+            var isPartNumber = false;
+            var number = 0;
+
+            if (IsPositionSymbol(startPosition + (-1, 0)))
+            {
+                isPartNumber = true;
+            }
+
+            var position = startPosition + (-1, 0);
+
+            for (; ; position.X++)
+            {
+                if (!TryGetCharacter(position, out var currentCharacter))
+                {
+                    if (position.X > Lines[startPosition.Y].Length)
+                    {
+                        break;
+                    }
+
+                    continue;
+                }
+
+                if (IsPositionSymbol(position + (0, -1)) || IsPositionSymbol(position + (0, 1)))
+                {
+                    isPartNumber = true;
+                }
+
+                if (char.IsDigit(currentCharacter))
+                {
+                    number *= 10;
+                    number += (currentCharacter - '0');
+                }
+                else if (position.X >= startPosition.X)
+                {
+                    break;
+                }
+            }
+
+            if (IsPositionSymbol(position))
+            {
+                isPartNumber = true;
+            }
+
+            value = number;
+            return isPartNumber;
+        }
+
+        public bool IsPositionSymbol(Vector2 position) => TryGetCharacter(position, out var character) && IsSymbol(character);
+
+        public bool IsSymbol(char character) => !char.IsDigit(character) && character is not '.';
+
+        public bool TryGetCharacter(Vector2 position, out char character)
+        {
+            var (column, row) = (position.X, position.Y);
+
+            if (row >= 0 && row < Lines!.Length)
+            {
+                var line = Lines[row];
+
+                if (column >= 0 && column < line.Length)
+                {
+                    character = line[column];
+                    return true;
+                }
+            }
+
+            character = default;
+            return false;
         }
     }
 
@@ -37,99 +130,29 @@ namespace Kesa.AdventOfCode.Aoc2023
     {
         public static string Run(string input)
         {
-            var lines = input.Lines().ToArray()!;
-            var number = new StringBuilder();
-            var isPartNumber = false;
+            var grid = new Day03TextGrid(input.Lines().ToArray());
+            var knownStarts = new HashSet<Vector2>();
             var answer = 0;
 
-            for (int row = 0; row < lines.Length; row++)
+            for (int row = 0; row < grid.Lines.Length; row++)
             {
-                var line = lines[row];
-
-                Reset();
-
-                for (int column = 0; column < line.Length + 1; column++)
+                for (int column = 0; column < grid.Lines[row].Length + 1; column++)
                 {
-                    if (column == line.Length)
+                    var position = new Vector2(column, row);
+
+                    if (grid.TryGetCharacter(position, out var potentialDigit) && char.IsDigit(potentialDigit))
                     {
-                        Check();
-                        continue;
-                    }
+                        var start = grid.GetNumberStart(position);
 
-                    var character = line[column];
-
-                    if (char.IsDigit(character))
-                    {
-                        number.Append(character);
-
-                        if (HasSymbolAround(row, column))
+                        if (knownStarts.Add(start) && grid.TryReadPartNumber(start, out var number))
                         {
-                            isPartNumber = true;
+                            answer += number;
                         }
-                    }
-                    else
-                    {
-                        Check();
                     }
                 }
             }
 
             return answer.ToString();
-
-            void Check()
-            {
-                if (number.Length > 0)
-                {
-                    if (isPartNumber)
-                    {
-                        answer += int.Parse(number.ToString());
-                    }
-
-                    Reset();
-                }
-            }
-
-            void Reset()
-            {
-                isPartNumber = false;
-                number.Clear();
-            }
-
-            bool HasSymbolAround(int row, int column)
-            {
-                return false
-                    || IsPositionSymbol(row - 1, column - 1)
-                    || IsPositionSymbol(row - 1, column)
-                    || IsPositionSymbol(row - 1, column + 1)
-
-                    || IsPositionSymbol(row, column - 1)
-                    || IsPositionSymbol(row, column + 1)
-
-                    || IsPositionSymbol(row + 1, column - 1)
-                    || IsPositionSymbol(row + 1, column)
-                    || IsPositionSymbol(row + 1, column + 1);
-            }
-
-            bool IsPositionSymbol(int row, int column) => TryGetCharacter(row, column, out var character) && IsSymbol(character);
-
-            bool IsSymbol(char character) => !char.IsDigit(character) && character is not '.';
-
-            bool TryGetCharacter(int row, int column, out char character)
-            {
-                if (row >= 0 && row < lines!.Length)
-                {
-                    var line = lines[row];
-
-                    if (column >= 0 && column < line.Length)
-                    {
-                        character = line[column];
-                        return true;
-                    }
-                }
-
-                character = default;
-                return false;
-            }
         }
     }
 
@@ -137,22 +160,24 @@ namespace Kesa.AdventOfCode.Aoc2023
     {
         public static string Run(string input)
         {
-            var lines = input.Lines().ToArray()!;
+            var grid = new Day03TextGrid(input.Lines().ToArray()!);
+            var knownStarts = new HashSet<Vector2>();
             var answer = 0;
 
-            for (int row = 0; row < lines.Length; row++)
+            for (int row = 0; row < grid.Lines.Length; row++)
             {
-                var line = lines[row];
-                var knownStarts = new HashSet<Vector2>();
+                var line = grid.Lines[row];
 
                 for (int column = 0; column < line.Length + 1; column++)
                 {
                     var position = new Vector2(column, row);
 
-                    if (!TryGetCharacter(position, out var potentialGear) || potentialGear is not '*')
+                    if (!grid.TryGetCharacter(position, out var potentialGear) || potentialGear is not '*')
                     {
                         continue;
                     }
+
+                    knownStarts.Clear();
 
                     var count = 0;
                     var ratio = 1;
@@ -160,14 +185,14 @@ namespace Kesa.AdventOfCode.Aoc2023
                     foreach (var offset in Day03Shared.Offsets)
                     {
                         var potentialPosition = position + offset;
-                        if (TryGetCharacter(potentialPosition, out var potentialDigit) && char.IsDigit(potentialDigit))
+                        if (grid.TryGetCharacter(potentialPosition, out var potentialDigit) && char.IsDigit(potentialDigit))
                         {
-                            var start = GetNumberStart(potentialPosition);
+                            var start = grid.GetNumberStart(potentialPosition);
 
-                            if (TryReadPartNumber(start, out var value) && knownStarts.Add(start))
+                            if (knownStarts.Add(start) && grid.TryReadPartNumber(start, out var number))
                             {
                                 count++;
-                                ratio *= value;
+                                ratio *= number;
                             }
                         }
                     }
@@ -180,97 +205,6 @@ namespace Kesa.AdventOfCode.Aoc2023
             }
 
             return answer.ToString();
-
-            Vector2 GetNumberStart(Vector2 position)
-            {
-                for (int x = position.X; x >= 0; x--)
-                {
-                    var potentialPosition = position with { X = x };
-
-                    if (TryGetCharacter(potentialPosition, out var potentialDigit) && char.IsDigit(potentialDigit))
-                    {
-                        position = potentialPosition;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                return position;
-            }
-
-            bool TryReadPartNumber(Vector2 startPosition, out int value)
-            {
-                var isPartNumber = false;
-                var number = 0;
-
-                if (IsPositionSymbol(startPosition + (-1, 0)))
-                {
-                    isPartNumber = true;
-                }
-
-                var position = startPosition + (-1, 0);
-
-                for (; ; position.X++)
-                {
-                    if (!TryGetCharacter(position, out var currentCharacter))
-                    {
-                        if (position.X > lines[startPosition.Y].Length)
-                        {
-                            break;
-                        }
-
-                        continue;
-                    }
-
-                    if (IsPositionSymbol(position + (0, -1)) || IsPositionSymbol(position + (0, 1)))
-                    {
-                        isPartNumber = true;
-                    }
-
-                    if (char.IsDigit(currentCharacter))
-                    {
-                        number *= 10;
-                        number += (currentCharacter - '0');
-                    }
-                    else if (position.X >= startPosition.X)
-                    {
-                        break;
-                    }
-                }
-
-                if (IsPositionSymbol(position))
-                {
-                    isPartNumber = true;
-                }
-
-                value = number;
-                return isPartNumber;
-            }
-
-            bool IsPositionSymbol(Vector2 position) => TryGetCharacter(position, out var character) && IsSymbol(character);
-
-            bool IsSymbol(char character) => !char.IsDigit(character) && character is not '.';
-
-            bool TryGetCharacter(Vector2 position, out char character)
-            {
-                var (column, row) = (position.X, position.Y);
-
-                if (row >= 0 && row < lines!.Length)
-                {
-                    var line = lines[row];
-
-                    if (column >= 0 && column < line.Length)
-                    {
-                        character = line[column];
-                        return true;
-                    }
-                }
-
-                character = default;
-                return false;
-            }
         }
     }
 }
