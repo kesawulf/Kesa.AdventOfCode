@@ -19,4 +19,8 @@
     <EmbeddedResource Include="Aoc2023\Input\Day03.txt" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="morelinq" Version="4.1.0" />
+  </ItemGroup>
+
 </Project>
