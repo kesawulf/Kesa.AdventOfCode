@@ -1,4 +1,6 @@
-﻿namespace Kesa.AdventOfCode.Common
+﻿using System.Text.RegularExpressions;
+
+namespace Kesa.AdventOfCode.Common
 {
     internal static class Extensions
     {
@@ -10,6 +12,16 @@
             {
                 yield return line;
             }
+        }
+
+        public static string GetGroup(this Match match, string group)
+        {
+            return match.Groups[group].Value;
+        }
+
+        public static T GetGroup<T>(this Match match, string group) where T : IParsable<T>
+        {
+            return T.Parse(match.Groups[group].Value, null);
         }
     }
 }
