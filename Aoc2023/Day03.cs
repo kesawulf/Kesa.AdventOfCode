@@ -10,7 +10,8 @@ namespace Kesa.AdventOfCode.Aoc2023
 
     internal record Day03TextGrid(string Input)
     {
-        public static IReadOnlyCollection<Vector2> Offsets { get; } = [
+        public static IReadOnlyCollection<Vector2> Offsets { get; } =
+        [
             new Vector2(-1, -1),
             new Vector2(-1, 0),
             new Vector2(-1, 1),

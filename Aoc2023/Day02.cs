@@ -57,16 +57,12 @@ namespace Kesa.AdventOfCode.Aoc2023
             foreach (var item in input.Lines())
             {
                 colors.Clear();
-
-                if (true
-                    && GetGameRegex().Match(item) is { Success: true } gameMatch
-                    && GetItemRegex().Matches(item) is { Count: > 0 } itemMatches)
+                if (GetItemRegex().Matches(item) is { Count: > 0 } itemMatches)
                 {
                     foreach (var match in (IEnumerable<Match>)itemMatches)
                     {
                         var colorName = match.GetGroup("color");
                         var colorCount = match.GetGroup<int>("count");
-
                         ref var existingCount = ref CollectionsMarshal.GetValueRefOrAddDefault(colors, colorName, out var existed);
                         existingCount = Math.Max(existingCount, colorCount);
                     }
