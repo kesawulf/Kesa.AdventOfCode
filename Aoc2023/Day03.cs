@@ -1,5 +1,4 @@
 ﻿using Kesa.AdventOfCode.Common;
-using MoreLinq;
 
 
 namespace Kesa.AdventOfCode.Aoc2023
@@ -11,7 +10,19 @@ namespace Kesa.AdventOfCode.Aoc2023
 
     internal record Day03TextGrid(string Input)
     {
-        public static IReadOnlyCollection<Vector2> Offsets { get; } = new[] { -1, 0, 1 }.Cartesian([-1, 0, 1], (x, y) => new Vector2(x, y)).ToArray();
+        public static IReadOnlyCollection<Vector2> Offsets { get; } = [
+            new Vector2(-1, -1),
+            new Vector2(-1, 0),
+            new Vector2(-1, 1),
+
+            new Vector2(0, -1),
+            new Vector2(0, 0),
+            new Vector2(0, 1),
+
+            new Vector2(1, -1),
+            new Vector2(1, 0),
+            new Vector2(1, 1),
+        ];
 
         public int Width { get; } = Input.IndexOf('\n');
 
@@ -85,9 +96,9 @@ namespace Kesa.AdventOfCode.Aoc2023
         }
     }
 
-    internal class Day03_Part1 : IAocRunner
+    internal class Day03 : IAocRunner
     {
-        public static string Run(string input)
+        public static string RunPart1(string input)
         {
             var grid = new Day03TextGrid(input);
             var knownStarts = new HashSet<Vector2>();
@@ -98,7 +109,6 @@ namespace Kesa.AdventOfCode.Aoc2023
                 for (int column = 0; column < grid.Width + 1; column++)
                 {
                     var position = new Vector2(column, row);
-
                     if (grid.TryGetCharacter(position, out var potentialDigit) && char.IsDigit(potentialDigit))
                     {
                         var start = grid.GetNumberStart(position);
@@ -112,11 +122,8 @@ namespace Kesa.AdventOfCode.Aoc2023
 
             return answer.ToString();
         }
-    }
 
-    internal class Day03_Part2 : IAocRunner
-    {
-        public static string Run(string input)
+        public static string RunPart2(string input)
         {
             var grid = new Day03TextGrid(input);
             var knownStarts = new HashSet<Vector2>();

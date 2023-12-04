@@ -4,24 +4,23 @@ using System.Text.RegularExpressions;
 
 namespace Kesa.AdventOfCode.Aoc2023
 {
-    internal class Day02Shared
+    internal partial class Day02 : IAocRunner
     {
-        public static Regex GameRegex = new Regex(@"Game (?<id>\d+)");
+        [GeneratedRegex(@"Game (?<id>\d+)")]
+        public static partial Regex GetGameRegex();
 
-        public static Regex ItemRegex = new Regex(@"(?:(?<count>\d+) (?<color>\w+))");
-    }
+        [GeneratedRegex(@"(?:(?<count>\d+) (?<color>\w+))")]
+        public static partial Regex GetItemRegex();
 
-    internal class Day02_Part1 : IAocRunner
-    {
-        public static string Run(string input)
+        public static string RunPart1(string input)
         {
             var answer = 0;
 
             foreach (var item in input.Lines())
             {
                 if (true
-                    && Day02Shared.GameRegex.Match(item) is { Success: true } gameMatch
-                    && Day02Shared.ItemRegex.Matches(item) is { Count: > 0 } itemMatches)
+                    && GetGameRegex().Match(item) is { Success: true } gameMatch
+                    && GetItemRegex().Matches(item) is { Count: > 0 } itemMatches)
                 {
                     var gameId = gameMatch.GetGroup<int>("id");
                     var valid = true;
@@ -49,11 +48,8 @@ namespace Kesa.AdventOfCode.Aoc2023
 
             return answer.ToString();
         }
-    }
 
-    internal class Day02_Part2 : IAocRunner
-    {
-        public static string Run(string input)
+        public static string RunPart2(string input)
         {
             var colors = new Dictionary<string, int>();
             var answer = 0;
@@ -63,8 +59,8 @@ namespace Kesa.AdventOfCode.Aoc2023
                 colors.Clear();
 
                 if (true
-                    && Day02Shared.GameRegex.Match(item) is { Success: true } gameMatch
-                    && Day02Shared.ItemRegex.Matches(item) is { Count: > 0 } itemMatches)
+                    && GetGameRegex().Match(item) is { Success: true } gameMatch
+                    && GetItemRegex().Matches(item) is { Count: > 0 } itemMatches)
                 {
                     foreach (var match in (IEnumerable<Match>)itemMatches)
                     {
@@ -72,7 +68,6 @@ namespace Kesa.AdventOfCode.Aoc2023
                         var colorCount = match.GetGroup<int>("count");
 
                         ref var existingCount = ref CollectionsMarshal.GetValueRefOrAddDefault(colors, colorName, out var existed);
-
                         existingCount = Math.Max(existingCount, colorCount);
                     }
 

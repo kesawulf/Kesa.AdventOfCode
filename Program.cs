@@ -59,7 +59,7 @@ namespace Kesa.AdventOfCode
                         continue;
                     }
 
-                    var chosenPart = chosenRunner.Parts.OrderBy(p => p.Number).FirstOrDefault();
+                    var chosenPart = chosenRunner.Parts.OrderBy(p => p.Number).LastOrDefault();
 
                     var isSpecificPart = match.TryGetGroup<int>("part", out var part);
                     if (isSpecificPart)
@@ -101,7 +101,8 @@ namespace Kesa.AdventOfCode
 
         public static IEnumerable<AocRunnerInfo> GetRunnerInfos()
         {
-            var regex = new Regex(@"Aoc(?<year>\d+).Day(?<day>\d+)(?:_Part(?<part>\w+))?");
+            var regex = new Regex(@"Aoc(?<year>\d+).Day(?<day>\d+)");
+            var partRegex = new Regex(@"RunPart(?<part>\w+)");
 
             return GetApplicableTypes()
                 .Select(type => (Type: type, Match: regex.Match($"{type.Namespace}.{type.Name}")))
@@ -109,18 +110,31 @@ namespace Kesa.AdventOfCode
                 .Select(pair => (
                     pair.Type,
                     Year: pair.Match.GetGroup<int>("year"),
-                    Day: pair.Match.GetGroup<int>("day"),
-                    Part: pair.Match.TryGetGroup<int>("part", out var part) ? part : 1
+                    Day: pair.Match.GetGroup<int>("day")
                 ))
-                .GroupBy(tuple => (tuple.Year, tuple.Day))
-                .Select(group => new AocRunnerInfo(group.Key.Year, group.Key.Day, group.Select(tuple => new AocRunnerPartInfo(tuple.Type, tuple.Part)).ToArray()))
+                .Select(tuple => GetRunner(tuple.Type, tuple.Year, tuple.Day))
                 .OrderBy(runner => runner.Year)
                 .ThenBy(runner => runner.Day);
+
+            AocRunnerInfo GetRunner(Type type, int year, int day)
+            {
+                var parts = new List<AocRunnerPartInfo>();
+
+                foreach (var method in type.GetMethods())
+                {
+                    if (partRegex.Match(method.Name) is { Success: true } match)
+                    {
+                        parts.Add(new AocRunnerPartInfo(method, match.GetGroup<int>("part")));
+                    }
+                }
+
+                return new AocRunnerInfo(type, year, day, parts.OrderBy(p => p.Number).ToArray());
+            }
         }
 
         public static void Execute(AocRunnerInfo runner, AocRunnerPartInfo part)
         {
-            var method = part.Type.GetMethod(nameof(IAocRunner.Run))!;
+            var method = part.Method;
             var input = GetTextFromResource();
 
             if (runner.Parts is not { Length: > 1 })
@@ -135,7 +149,7 @@ namespace Kesa.AdventOfCode
             Console.WriteLine("");
 
             var stopwatch = Stopwatch.StartNew();
-            var result = (string)method.Invoke(null, [input])!;
+            var result = method.Invoke(null, [input])?.ToString() ?? "[ null ]";
 
             Console.WriteLine($"Took {stopwatch.ElapsedMilliseconds}ms.");
             Console.WriteLine("");
@@ -158,7 +172,7 @@ namespace Kesa.AdventOfCode
         }
     }
 
-    public record AocRunnerInfo(int Year, int Day, AocRunnerPartInfo[] Parts)
+    public record AocRunnerInfo(Type Type, int Year, int Day, AocRunnerPartInfo[] Parts)
     {
         public string Description { get; } = $"{Year}-{Day:D2}";
 
@@ -169,5 +183,5 @@ namespace Kesa.AdventOfCode
         public string InputPath { get; } = $"Aoc{Year}.Input.Day{Day:D2}.txt";
     }
 
-    public record AocRunnerPartInfo(Type Type, int Number);
+    public record AocRunnerPartInfo(MethodInfo Method, int Number);
 }
