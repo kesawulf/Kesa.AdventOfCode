@@ -18,7 +18,7 @@ public class Day02 : IAocRunner
     private static IEnumerable<Report> GetReports(string input)
     {
         return input.Lines()
-            .Select(Extensions.SplitIntoInts)
+            .Select(line => Extensions.SplitIntoInts(line))
             .Select(values => new Report(values.ToArray()));
     }
 

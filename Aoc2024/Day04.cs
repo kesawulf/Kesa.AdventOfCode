@@ -1,6 +1,7 @@
 using System.Net.Mime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
+using System.Text;
 using Kesa.AdventOfCode.Common;
 
 namespace Kesa.AdventOfCode.Aoc2024;
@@ -25,25 +26,16 @@ public class Day04 : IAocRunner
             (1, 1)
         };
 
-        for (int x = 0; x < board.Width; x++)
+        for (var x = 0; x < board.Width; x++)
         {
-            for (int y = 0; y < board.Height; y++)
+            for (var y = 0; y < board.Height; y++)
             {
                 foreach (var direction in directions)
                 {
-                    if (true
-                        && SearchInDirection(0, 0, 'X')
-                        && SearchInDirection(direction.X, direction.Y, 'M')
-                        && SearchInDirection(direction.X * 2, direction.Y * 2, 'A')
-                        && SearchInDirection(direction.X * 3, direction.Y * 3, 'S'))
+                    if (board.GetString(x, y, direction.X, direction.Y, 4) is "XMAS")
                     {
-                        total += 1;
+                        total++;
                     }
-                }
-
-                bool SearchInDirection(int xOffset, int yOffset, char desired)
-                {
-                    return board.TryGetChar(xOffset, yOffset, out var c) && c == desired;
                 }
             }
         }
@@ -53,7 +45,23 @@ public class Day04 : IAocRunner
 
     public static object RunPart2(string input)
     {
-        throw new NotImplementedException();
+        var board = new TextBoard(input);
+        var total = 0;
+
+        for (var x = 0; x < board.Width; x++)
+        {
+            for (var y = 0; y < board.Height; y++)
+            {
+                if (true
+                    && board.GetString(x, y, 1, 1, 3) is "MAS" or "SAM"
+                    && board.GetString(x + 2, y, -1, 1, 3) is "MAS" or "SAM")
+                {
+                    total++;
+                }
+            }
+        }
+
+        return total;
     }
 
     private class TextBoard(string input)
@@ -61,6 +69,7 @@ public class Day04 : IAocRunner
         public string[] _lines = input.Lines().ToArray();
 
         public int Width => _lines[0].Length;
+
         public int Height => _lines.Length;
 
         public bool TryGetChar(int x, int y, out char c)
@@ -73,6 +82,21 @@ public class Day04 : IAocRunner
 
             c = _lines[y][x];
             return true;
+        }
+
+        public string GetString(int x, int y, int xDirection, int yDirection, int count)
+        {
+            var text = new StringBuilder(count);
+
+            for (int i = 0; i < count; i++)
+            {
+                if (TryGetChar(x + (xDirection * i), y + (yDirection * i), out var c))
+                {
+                    text.Append(c);
+                }
+            }
+
+            return text.ToString();
         }
     }
 }

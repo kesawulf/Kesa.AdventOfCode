@@ -4,6 +4,13 @@ namespace Kesa.AdventOfCode.Common
 {
     internal static class Extensions
     {
+        public static void Swap<T>(this T[] array, int index, int otherIndex)
+        {
+            var temp = array[index]; 
+            array[index] = array[otherIndex];
+            array[otherIndex] = temp;
+        }
+        
         public static (T, U, V) Extend<T, U, V>(this (T, U) tuple, Func<T, U, V> extender)
         {
             return (tuple.Item1, tuple.Item2, extender(tuple.Item1, tuple.Item2));
@@ -24,9 +31,9 @@ namespace Kesa.AdventOfCode.Common
             return value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         }
 
-        public static IEnumerable<int> SplitIntoInts(this string value)
+        public static IEnumerable<int> SplitIntoInts(this string value, char separator = ' ')
         {
-            return SplitSpaces(value).Select(int.Parse);
+            return value.Split(separator, StringSplitOptions.RemoveEmptyEntries).Select(int.Parse);
         }
 
         public static string GetGroup(this Match match, string group)

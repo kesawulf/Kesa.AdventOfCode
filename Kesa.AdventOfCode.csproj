@@ -12,6 +12,7 @@
     <None Remove="Aoc2023\Input\Day02.txt" />
     <None Remove="Aoc2023\Input\Day03.txt" />
     <None Remove="Aoc2023\Input\Day04.txt" />
+    <None Remove="Aoc2024\Day05.txt" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,6 +28,7 @@
     <EmbeddedResource Include="Aoc2024\Day03.txt" />
     <None Remove="Aoc2024\Day04.txt" />
     <EmbeddedResource Include="Aoc2024\Day04.txt" />
+    <EmbeddedResource Include="Aoc2024\Day05.txt" />
   </ItemGroup>
 
   <ItemGroup>
