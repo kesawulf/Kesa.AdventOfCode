@@ -37,7 +37,7 @@ namespace Kesa.AdventOfCode.Aoc2023
             return value.ToString();
         }
 
-        public static string RunPart1(string input)
+        public static object RunPart1(string input)
         {
             return RunInternal(input, (ref ReadOnlySpan<char> span) => span switch
             {
@@ -46,7 +46,7 @@ namespace Kesa.AdventOfCode.Aoc2023
             });
         }
 
-        public static string RunPart2(string input)
+        public static object RunPart2(string input)
         {
             return RunInternal(input, (ref ReadOnlySpan<char> span) => span switch
             {

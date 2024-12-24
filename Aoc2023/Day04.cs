@@ -22,7 +22,7 @@ namespace Kesa.AdventOfCode.Aoc2023
             return new Day04Scratchcard(cardId, winningNumbers, numbers);
         }
 
-        public static string RunPart1(string input)
+        public static object RunPart1(string input)
         {
             input = input.Replace("|", ":");
 
@@ -45,7 +45,7 @@ namespace Kesa.AdventOfCode.Aoc2023
             return answer.ToString();
         }
 
-        public static string RunPart2(string input)
+        public static object RunPart2(string input)
         {
             var answer = 0;
             var original = input.Lines().Select(ProcessCard).ToArray();

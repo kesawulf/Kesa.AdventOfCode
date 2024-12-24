@@ -99,7 +99,7 @@ namespace Kesa.AdventOfCode.Aoc2023
 
     internal class Day03 : IAocRunner
     {
-        public static string RunPart1(string input)
+        public static object RunPart1(string input)
         {
             var grid = new Day03TextGrid(input);
             var knownStarts = new HashSet<Vector2>();
@@ -124,7 +124,7 @@ namespace Kesa.AdventOfCode.Aoc2023
             return answer.ToString();
         }
 
-        public static string RunPart2(string input)
+        public static object RunPart2(string input)
         {
             var grid = new Day03TextGrid(input);
             var knownStarts = new HashSet<Vector2>();

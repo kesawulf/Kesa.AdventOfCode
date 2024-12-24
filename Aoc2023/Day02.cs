@@ -12,7 +12,7 @@ namespace Kesa.AdventOfCode.Aoc2023
         [GeneratedRegex(@"(?:(?<count>\d+) (?<color>\w+))")]
         public static partial Regex GetItemRegex();
 
-        public static string RunPart1(string input)
+        public static object RunPart1(string input)
         {
             var answer = 0;
 
@@ -49,7 +49,7 @@ namespace Kesa.AdventOfCode.Aoc2023
             return answer.ToString();
         }
 
-        public static string RunPart2(string input)
+        public static object RunPart2(string input)
         {
             var colors = new Dictionary<string, int>();
             var answer = 0;

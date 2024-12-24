@@ -1,6 +1,7 @@
 ﻿using Kesa.AdventOfCode.Common;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace Kesa.AdventOfCode
@@ -149,11 +150,9 @@ namespace Kesa.AdventOfCode
             Console.WriteLine("");
 
             var stopwatch = Stopwatch.StartNew();
-            var result = method.Invoke(null, [input])?.ToString() ?? "[ null ]";
+            var result = JsonSerializer.Serialize(method.Invoke(null, [input]));
 
             Console.WriteLine($"Took {stopwatch.ElapsedMilliseconds}ms.");
-            Console.WriteLine("");
-            Console.WriteLine($"Result Length: {result.Length}");
             Console.WriteLine("");
             Console.WriteLine($"Result: {result}");
 
@@ -180,7 +179,7 @@ namespace Kesa.AdventOfCode
             ? $"{Description} ({string.Join("|", Parts.Select(v => v.Number))})"
             : Description;
 
-        public string InputPath { get; } = $"Aoc{Year}.Input.Day{Day:D2}.txt";
+        public string InputPath { get; } = $"Aoc{Year}.Day{Day:D2}.txt";
     }
 
     public record AocRunnerPartInfo(MethodInfo Method, int Number);
